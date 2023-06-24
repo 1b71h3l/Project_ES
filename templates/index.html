@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+
+    .container {
+      display: flex;
+      flex-wrap: wrap;
+      flex-direction: column;
+      width: 100%;
+      max-width: 800px;
+    }
+
+    .horizontal-container {
+  display: flex;
+  flex-direction: row;
+}
+
+    .image-container {
+      margin-right: 40px;
+      flex: 1;
+    }
+
+    .remote-control {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+
+    .remote-control h2 {
+      font-size: 24px;
+      margin-bottom: 20px;
+    }
+
+    .arrow-link {
+      font-size: 30px;
+      text-decoration: none;
+      margin-bottom: 10px;
+      color: #333;
+    }
+
+    img {
+      max-width: 100%;
+      height: auto;
+    }
+    .card-m{
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .progress-bar-container {
+  align-items: center;
+  width:80%; /* Adjust the width as needed */
+  height: 20px; /* Adjust the height as needed */
+  background-color: #f0f0f0; /* Background color of the progress bar container */
+  border-radius: 10px; /* Adjust the border radius for rounded corners */
+}
+
+.progress-bar {
+  height: 100%;
+  border-radius: 10px; /* Adjust the border radius for rounded corners */
+  transition: width 0.3s ease-in-out; /* Animation duration and easing */
+}
+
+  </style>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/css/bootstrap.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js"></script>  
+</head>
+<body>
+  <div class="container">
+    <div class="horizontal-container">
+      <div class="image-container">
+        <img src="{{ url_for('video_feed') }}" alt="Video Feed">
+      </div>
+      <div class="remote-control">
+        <h2>Remote Car Control</h2>
+        <a href="#" id="up" class="arrow-link"> &#8593; Up</a>
+        <a href="#" id="left" class="arrow-link"> &#8592; Left</a>
+        <a href="#" id="right" class="arrow-link"> &#8594; Right</a>
+        <a href="#" id="down" class="arrow-link"> &#8595; Down</a>
+      </div>
+    </div>
+    <br/>
+    <div class="card">
+      <div class="card-header" >
+        Obstacle monitoring the back of the car
+      </div>
+      <div class="card-body">
+        <h5 class="card-title" id="data" >Special title treatment</h5>
+        <div class="card-m">
+        <div class="progress-bar-container"> 
+          <div class="progress-bar" id="dangerProgressBar"></div>
+        </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+ <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.min.js" integrity="sha384-cuYeSxntonz0PPNlHhBs68uyIAVpIIOZZ5JqeqvYYIcEL727kskC66kF92t6Xl2V" crossorigin="anonymous"></script>
+  <script>
+    $(document).ready(function() {
+      $("#down").on("mousedown", function() {
+        $.get('/down_side');
+      }).on('mouseup', function() {
+        $.get('/stop');
+      });
+
+      $("#up").on("mousedown", function() {
+        $.get('/up_side');
+      }).on('mouseup', function() {
+        $.get('/stop');
+      });
+
+      $("#left").on("mousedown", function() {
+        $.get('/left_side');
+      }).on('mouseup', function() {
+        $.get('/stop');
+      });
+$("#right").on("mousedown", function() {
+        $.get('/right_side');
+      }).on('mouseup', function() {
+        $.get('/stop');
+      });
+
+      if (typeof(EventSource) !== 'undefined') {
+    var source = new EventSource('/stream');
+
+    source.addEventListener('message', function(event) {
+      // Update the HTML element with the new data
+      //document.getElementById('data').innerText = event.data;
+
+      // Update progress bar and color based on the received data
+      var dangerLevel = parseInt(event.data);
+      updateDangerLevel(dangerLevel);
+      // Update text based on the received data
+      updateText(dangerLevel);
+    });
+  } else {
+    // SSE not supported
+    document.getElementById('data').innerText = 'SSE not supported.';
+  }
+
+  function updateDangerLevel(dangerLevel) {
+
+    const progressBar = document.getElementById('dangerProgressBar');
+    progressBar.style.width = ((dangerLevel+1) * 20) + '%';
+
+    // Define colors for different danger levels
+    const dangerColors = ['#00FF00', '#32CD32', '#FFFF00', '#FFA500', '#FF0000'];    
+
+    // Change progress bar color based on the danger level
+    if (dangerLevel >= 0 && dangerLevel <= 4) {
+      progressBar.style.backgroundColor = dangerColors[dangerLevel];
+    }
+  }
+
+  function updateText(dangerLevel) {
+    const dataText = document.getElementById('data');
+
+    // Update text based on the danger level
+    switch (dangerLevel) {
+      case 0:
+        dataText.innerText = 'Very safe';
+        break;
+      case 1:
+        dataText.innerText = 'Safe';
+        break;
+      case 2:
+        dataText.innerText = 'Moderate';
+        break;
+      case 3:
+        dataText.innerText = 'Caution';
+        break;
+      case 4:
+        dataText.innerText = 'Dangerous';
+        break;
+      default:
+        dataText.innerText = 'Unknown';
+        break;
+    }
+  }
+
+  // Example usage
+  const currentDangerLevel = 3; // Example of current danger level
+  updateDangerLevel(currentDangerLevel);
+  updateText(currentDangerLevel);
+});   
+  </script>
+</body>
+</html>
+
